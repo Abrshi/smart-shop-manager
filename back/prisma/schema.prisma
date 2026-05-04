@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  OWNER
+  CASHIER
+  ONBORED
+
+}
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  ONBORED
+}
+
+model User {
+  user_id          Int           @id @default(autoincrement())
+  first_name       String
+  father_name      String?
+  grandfather_name String?
+  email            String        @unique
+  password_hash    String
+  phone_number     String        @unique
+
+  role             Role          @default(ONBORED)
+  account_status   AccountStatus @default(ONBORED)
+
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+
+  payments      Payment[]
+  sessions      Session[]
+  @@map("Users")
+}
+
+model Session {
+  session_id   Int      @id @default(autoincrement())
+  user_id      Int
+  refreshToken String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [user_id])
+
+  @@map("Sessions")
+}
+
+model Payment {
+  payment_id   Int      @id @default(autoincrement())
+  user_id      Int
+  amount       Float
+  method       String
+  status       String  @default("PENDING")
+  transaction_id String @unique
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  user User @relation(fields: [user_id], references: [user_id])
+  @@map("Payments")
+}
+ 

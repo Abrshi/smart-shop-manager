@@ -1,0 +1,9 @@
+-- AlterEnum
+ALTER TYPE "AccountStatus" ADD VALUE 'ONBORED';
+
+-- AlterEnum
+ALTER TYPE "Role" ADD VALUE 'ONBORED';
+
+-- AlterTable
+ALTER TABLE "Users" ALTER COLUMN "role" SET DEFAULT 'ONBORED',
+ALTER COLUMN "account_status" SET DEFAULT 'ONBORED';
