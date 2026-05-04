@@ -6,6 +6,7 @@ import axios from "axios";
 
 import authRouter from "./routes/auth/auth.route.js";
 import payment from "./routes/payment/payment.route.js";
+import ownerRouter from "./routes/owner/owner.route.js";
 // admin routes
 
 // user routes
@@ -34,7 +35,7 @@ app.use(express.json());
 // comen 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/payment", payment);
-
+app.use("/api/v1/owner", ownerRouter);
 app.get("/", (req, res) => {
   res.send({ message: "Shop API is running..." });
 });

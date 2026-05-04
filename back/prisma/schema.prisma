@@ -35,6 +35,8 @@ model User {
   created_at       DateTime      @default(now())
   updated_at       DateTime      @updatedAt
 
+  shop           Shop[]
+  employees      Employee[]
   payments      Payment[]
   sessions      Session[]
   @@map("Users")
@@ -64,4 +66,47 @@ model Payment {
   user User @relation(fields: [user_id], references: [user_id])
   @@map("Payments")
 }
- 
+
+model Shop{
+  shop_id       Int      @id @default(autoincrement())
+  owner_id      Int
+  name          String
+  location      String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  user User @relation(fields: [owner_id], references: [user_id])
+  employees Employee[]
+  branches Branch[]
+  
+  @@map("Shops")
+}
+
+model Branch{
+  branch_id      Int      @id @default(autoincrement())
+  shop_id        Int
+  name           String
+  location       String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  shop Shop @relation(fields: [shop_id], references: [shop_id])
+  employees Employee[]
+  @@map("Branches")
+}
+
+model Employee {
+  employee_id   Int      @id @default(autoincrement())
+  shop_id       Int
+  user_id       Int
+  branch_id      Int
+  
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  shop Shop @relation(fields: [shop_id], references: [shop_id])
+  user User @relation(fields: [user_id], references: [user_id])
+  branch Branch @relation(fields: [branch_id], references: [branch_id])
+
+  @@map("Employees")
+}

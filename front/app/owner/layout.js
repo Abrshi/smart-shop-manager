@@ -17,6 +17,7 @@ export default function OwnerLayout({ children }) {
     { name: "Employees", path: "/owner/employees" },
     { name: "Customers", path: "/owner/customers" },
     { name: "Reports", path: "/owner/reports" },
+    { name: "Shop", path: "/owner/shop" },
   ];
 
   const handleRoleSwitch = (role) => {
