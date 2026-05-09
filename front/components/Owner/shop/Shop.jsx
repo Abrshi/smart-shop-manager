@@ -16,7 +16,7 @@ function Shop() {
   // 🔥 Fetch shops
   const fetchShops = async () => {
     try {
-      const res = await axiosbaseurl.post("/owner/getShops");
+      const res = await axiosbaseurl.get("/owner/getShops");
       if (res.data.length > 0) {
         setShop(res.data[0]); // assuming one shop per owner
       } else {
