@@ -92,6 +92,7 @@ model Branch{
 
   shop Shop @relation(fields: [shop_id], references: [shop_id])
   employees Employee[]
+  products Product[]
   @@map("Branches")
 }
 
@@ -108,5 +109,31 @@ model Employee {
   user User @relation(fields: [user_id], references: [user_id])
   branch Branch @relation(fields: [branch_id], references: [branch_id])
 
+ products Product[]
   @@map("Employees")
+}
+model Product {
+  product_id    Int      @id @default(autoincrement())
+  sku           String? @unique
+  name          String
+  price         Float
+  quantity      Int
+  barcode       String?   @unique
+  qrcode        String?  @unique
+  type          String?
+  minStock      Int
+  brand         String?
+  description   String?
+  image         String?
+  employee_id   Int
+  branch_id     Int
+  isActive      Boolean @default(true)
+  
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  employee Employee @relation(fields: [employee_id], references: [employee_id])
+  branch Branch @relation(fields: [branch_id], references: [branch_id])
+
+  @@map("Products")
 }
