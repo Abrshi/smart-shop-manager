@@ -2,380 +2,379 @@ import { getUserFromRefreshToken } from "../../lib/getUserId.js";
 import { uploadFileToDrive } from "../../lib/googleDrive.js";
 import { prisma } from "../../lib/prisma.js";
 
+      export const getEmployeeBranches = async (req, res) => {
+        try {
+          // get logged in user
+          const user = await getUserFromRefreshToken(
+            req.cookies.refreshToken
+          );
+          console.log("User from token:", user);
 
-export const getEmployeeBranches = async (req, res) => {
-  try {
-    // get logged in user
-    const user = await getUserFromRefreshToken(
-      req.cookies.refreshToken
-    );
-    console.log("User from token:", user);
+          if (!user) {
+            return res.status(401).json({
+              success: false,
+              error: "Unauthorized",
+            });
+          }
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: "Unauthorized",
-      });
-    }
+          // find employee
+          const employee = await prisma.employee.findFirst({
+            where: {
+              user_id: user.user_id,
+            },
+            include: {
+              branch: true,
+            },
+          });
 
-    // find employee
-    const employee = await prisma.employee.findFirst({
-      where: {
-        user_id: user.user_id,
-      },
-      include: {
-        branch: true,
-      },
-    });
+          if (!employee) {
+            return res.status(404).json({
+              success: false,
+              error: "Employee not found",
+            });
+          }
 
-    if (!employee) {
-      return res.status(404).json({
-        success: false,
-        error: "Employee not found",
-      });
-    }
+          // return branch
+          return res.status(200).json({
+            success: true,
+            branches: [employee.branch],
+          });
 
-    // return branch
-    return res.status(200).json({
-      success: true,
-      branches: [employee.branch],
-    });
+        } catch (error) {
+          console.error("Get Branch Error:", error);
 
-  } catch (error) {
-    console.error("Get Branch Error:", error);
+          return res.status(500).json({
+            success: false,
+            error: "Failed to fetch branches",
+          });
+        }
+      };
 
-    return res.status(500).json({
-      success: false,
-      error: "Failed to fetch branches",
-    });
-  }
-};
-
-export const addNewProduct = async (req, res) => {
-  try {
-    const {
-      name,
-      price,
-      quantity,
-      barcode,
-      qrcode,
-      type,
-      minStock,
-      brand,
-      description,
-      branch_id,
-    } = req.body;
-
-    const image = req.file;
-
-    // =========================
-    // VALIDATION
-    // =========================
-
-    if (!image) {
-      return res.status(400).json({
-        success: false,
-        error: "Product image is required",
-      });
-    }
-
-    if (!name || !price || !quantity || !branch_id) {
-      return res.status(400).json({
-        success: false,
-        error: "Please fill all required fields",
-      });
-    }
-
-    // =========================
-    // AUTH USER
-    // =========================
-
-    const user = await getUserFromRefreshToken(
-      req.cookies.refreshToken
-    );
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: "Unauthorized",
-      });
-    }
-
-    // =========================
-    // FIND EMPLOYEE
-    // =========================
-
-    const employee = await prisma.employee.findFirst({
-      where: {
-        user_id: user.user_id,
-      },
-    });
-
-    if (!employee) {
-      return res.status(404).json({
-        success: false,
-        error: "Employee not found",
-      });
-    }
-
-    // =========================
-    // BRANCH VALIDATION
-    // =========================
-
-    if (employee.branch_id !== parseInt(branch_id)) {
-      console.log(
-        `Employee branch (${employee.branch_id}) does not match selected branch (${branch_id})`
-      );
-
-      return res.status(403).json({
-        success: false,
-        error: "You are not assigned to this branch",
-      });
-    }
-
-    // =========================
-    // CHECK DUPLICATES
-    // =========================
-
-    if (barcode) {
-      const existingBarcode =
-        await prisma.product.findUnique({
-          where: {
+      export const addNewProduct = async (req, res) => {
+        try {
+          const {
+            name,
+            price,
+            quantity,
             barcode,
-          },
-        });
-
-      if (existingBarcode) {
-        return res.status(400).json({
-          success: false,
-          error: "Barcode already exists",
-        });
-      }
-    }
-
-    if (qrcode) {
-      const existingQrCode =
-        await prisma.product.findUnique({
-          where: {
             qrcode,
-          },
-        });
+            type,
+            minStock,
+            brand,
+            description,
+            branch_id,
+          } = req.body;
 
-      if (existingQrCode) {
-        return res.status(400).json({
-          success: false,
-          error: "QR Code already exists",
-        });
-      }
-    }
+          const image = req.file;
 
-    // =========================
-    // UPLOAD IMAGE
-    // =========================
+          // =========================
+          // VALIDATION
+          // =========================
 
-    const imageUrl = await uploadFileToDrive(image);
+          if (!image) {
+            return res.status(400).json({
+              success: false,
+              error: "Product image is required",
+            });
+          }
 
-    if (!imageUrl) {
-      console.error("Image upload failed");
+          if (!name || !price || !quantity || !branch_id) {
+            return res.status(400).json({
+              success: false,
+              error: "Please fill all required fields",
+            });
+          }
 
-      return res.status(500).json({
-        success: false,
-        error: "Failed to upload product image",
-      });
-    }
+          // =========================
+          // AUTH USER
+          // =========================
 
-    console.log("Uploaded image URL:", imageUrl);
+          const user = await getUserFromRefreshToken(
+            req.cookies.refreshToken
+          );
 
-    // =========================
-    // CREATE PRODUCT
-    // =========================
+          if (!user) {
+            return res.status(401).json({
+              success: false,
+              error: "Unauthorized",
+            });
+          }
 
-    const product = await prisma.product.create({
-      data: {
-        name,
-        price: parseFloat(price),
-        quantity: parseInt(quantity),
-        barcode: barcode || null,
-        qrcode: qrcode || null,
-        type,
-        minStock: minStock
-          ? parseInt(minStock)
-          : 0,
-        brand,
-        description,
-        image: imageUrl,
+          // =========================
+          // FIND EMPLOYEE
+          // =========================
 
-        employee_id: employee.employee_id,
-        branch_id: parseInt(branch_id),
-      },
-    });
+          const employee = await prisma.employee.findFirst({
+            where: {
+              user_id: user.user_id,
+            },
+          });
 
-    // =========================
-    // SUCCESS RESPONSE
-    // =========================
+          if (!employee) {
+            return res.status(404).json({
+              success: false,
+              error: "Employee not found",
+            });
+          }
 
-    return res.status(201).json({
-      success: true,
-      message: "Product created successfully",
-      product,
-    });
+          // =========================
+          // BRANCH VALIDATION
+          // =========================
 
-  } catch (error) {
-    console.error("Create Product Error:", error);
+          if (employee.branch_id !== parseInt(branch_id)) {
+            console.log(
+              `Employee branch (${employee.branch_id}) does not match selected branch (${branch_id})`
+            );
 
-    return res.status(500).json({
-      success: false,
-      error: "Failed to create product",
-    });
-  }
-};
-export const editProduct = async (req, res) => {
-  try {
-    const {
-      name,
-      price,
-      quantity,
-      barcode,
-      qrcode,
-      type,
-      minStock,
-      brand,
-      description,
-      branch_id,
-    } = req.body;
-    const { id } = req.params;
+            return res.status(403).json({
+              success: false,
+              error: "You are not assigned to this branch",
+            });
+          }
 
-    const image = req.file;
+          // =========================
+          // CHECK DUPLICATES
+          // =========================
 
-    // =========================
-    // VALIDATION
-    // =========================
+          if (barcode) {
+            const existingBarcode =
+              await prisma.product.findUnique({
+                where: {
+                  barcode,
+                },
+              });
 
-    if (!image) {
-      return res.status(400).json({
-        success: false,
-        error: "Product image is required",
-      });
-    }
+            if (existingBarcode) {
+              return res.status(400).json({
+                success: false,
+                error: "Barcode already exists",
+              });
+            }
+          }
 
-    if (!name || !price || !quantity || !branch_id) {
-      return res.status(400).json({
-        success: false,
-        error: "Please fill all required fields",
-      });
-    }
+          if (qrcode) {
+            const existingQrCode =
+              await prisma.product.findUnique({
+                where: {
+                  qrcode,
+                },
+              });
 
-    // =========================
-    // AUTH USER
-    // =========================
+            if (existingQrCode) {
+              return res.status(400).json({
+                success: false,
+                error: "QR Code already exists",
+              });
+            }
+          }
 
-    const user = await getUserFromRefreshToken(
-      req.cookies.refreshToken
-    );
+          // =========================
+          // UPLOAD IMAGE
+          // =========================
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: "Unauthorized",
-      });
-    }
+          const imageUrl = await uploadFileToDrive(image);
 
-    // =========================
-    // FIND EMPLOYEE
-    // =========================
+          if (!imageUrl) {
+            console.error("Image upload failed");
 
-    const employee = await prisma.employee.findFirst({
-      where: {
-        user_id: user.user_id,
-      },
-    });
+            return res.status(500).json({
+              success: false,
+              error: "Failed to upload product image",
+            });
+          }
 
-    if (!employee) {
-      return res.status(404).json({
-        success: false,
-        error: "Employee not found",
-      });
-    }
+          console.log("Uploaded image URL:", imageUrl);
 
-    // =========================
-    // BRANCH VALIDATION
-    // =========================
+          // =========================
+          // CREATE PRODUCT
+          // =========================
 
-    if (employee.branch_id !== parseInt(branch_id)) {
-      console.log(
-        `Employee branch (${employee.branch_id}) does not match selected branch (${branch_id})`
-      );
+          const product = await prisma.product.create({
+            data: {
+              name,
+              price: parseFloat(price),
+              quantity: parseInt(quantity),
+              barcode: barcode || null,
+              qrcode: qrcode || null,
+              type,
+              minStock: minStock
+                ? parseInt(minStock)
+                : 0,
+              brand,
+              description,
+              image: imageUrl,
 
-      return res.status(403).json({
-        success: false,
-        error: "You are not assigned to this branch",
-      });
-    }
+              employee_id: employee.employee_id,
+              branch_id: parseInt(branch_id),
+            },
+          });
 
-    
-    // =========================
-    // UPLOAD IMAGE
-    // =========================
+          // =========================
+          // SUCCESS RESPONSE
+          // =========================
 
-    const imageUrl = await uploadFileToDrive(image);
+          return res.status(201).json({
+            success: true,
+            message: "Product created successfully",
+            product,
+          });
 
-    if (!imageUrl) {
-      console.error("Image upload failed");
+        } catch (error) {
+          console.error("Create Product Error:", error);
 
-      return res.status(500).json({
-        success: false,
-        error: "Failed to upload product image",
-      });
-    }
+          return res.status(500).json({
+            success: false,
+            error: "Failed to create product",
+          });
+        }
+      };
+      export const editProduct = async (req, res) => {
+        try {
+          const {
+            name,
+            price,
+            quantity,
+            barcode,
+            qrcode,
+            type,
+            minStock,
+            brand,
+            description,
+            branch_id,
+          } = req.body;
+          const { id } = req.params;
 
-    console.log("Uploaded image URL:", imageUrl);
+          const image = req.file;
 
-    // =========================
-    // update PRODUCT
-    // =========================
+          // =========================
+          // VALIDATION
+          // =========================
 
-    const product = await prisma.product.update({
-      where: {
-        product_id: parseInt(id),
-      },
-      data: {
-        name,
-        price: parseFloat(price),
-        quantity: parseInt(quantity),
-        barcode: barcode || null,
-        qrcode: qrcode || null,
-        type,
-        minStock: minStock
-          ? parseInt(minStock)
-          : 0,
-        brand,
-        description,
-        image: imageUrl,
+          if (!image) {
+            return res.status(400).json({
+              success: false,
+              error: "Product image is required",
+            });
+          }
 
-        employee_id: employee.employee_id,
-        branch_id: parseInt(branch_id),
-      },
-    });
+          if (!name || !price || !quantity || !branch_id) {
+            return res.status(400).json({
+              success: false,
+              error: "Please fill all required fields",
+            });
+          }
 
-    // =========================
-    // SUCCESS RESPONSE
-    // =========================
+          // =========================
+          // AUTH USER
+          // =========================
 
-    return res.status(201).json({
-      success: true,
-      message: "Product updated successfully",
-      product,
-    });
+          const user = await getUserFromRefreshToken(
+            req.cookies.refreshToken
+          );
 
-  } catch (error) {
-    console.error("Update Product Error:", error);
+          if (!user) {
+            return res.status(401).json({
+              success: false,
+              error: "Unauthorized",
+            });
+          }
 
-    return res.status(500).json({
-      success: false,
-      error: "Failed to update product",
-    });
-  }
-};
+          // =========================
+          // FIND EMPLOYEE
+          // =========================
+
+          const employee = await prisma.employee.findFirst({
+            where: {
+              user_id: user.user_id,
+            },
+          });
+
+          if (!employee) {
+            return res.status(404).json({
+              success: false,
+              error: "Employee not found",
+            });
+          }
+
+          // =========================
+          // BRANCH VALIDATION
+          // =========================
+
+          if (employee.branch_id !== parseInt(branch_id)) {
+            console.log(
+              `Employee branch (${employee.branch_id}) does not match selected branch (${branch_id})`
+            );
+
+            return res.status(403).json({
+              success: false,
+              error: "You are not assigned to this branch",
+            });
+          }
+
+          
+          // =========================
+          // UPLOAD IMAGE
+          // =========================
+
+          const imageUrl = await uploadFileToDrive(image);
+
+          if (!imageUrl) {
+            console.error("Image upload failed");
+
+            return res.status(500).json({
+              success: false,
+              error: "Failed to upload product image",
+            });
+          }
+
+          console.log("Uploaded image URL:", imageUrl);
+
+          // =========================
+          // update PRODUCT
+          // =========================
+
+          const product = await prisma.product.update({
+            where: {
+              product_id: parseInt(id),
+            },
+            data: {
+              name,
+              price: parseFloat(price),
+              quantity: parseInt(quantity),
+              barcode: barcode || null,
+              qrcode: qrcode || null,
+              type,
+              minStock: minStock
+                ? parseInt(minStock)
+                : 0,
+              brand,
+              description,
+              image: imageUrl,
+
+              employee_id: employee.employee_id,
+              branch_id: parseInt(branch_id),
+            },
+          });
+
+          // =========================
+          // SUCCESS RESPONSE
+          // =========================
+
+          return res.status(201).json({
+            success: true,
+            message: "Product updated successfully",
+            product,
+          });
+
+        } catch (error) {
+          console.error("Update Product Error:", error);
+
+          return res.status(500).json({
+            success: false,
+            error: "Failed to update product",
+          });
+        }
+      };
 
       export const getProducts = async (req, res) => {
         // GET USER ID FROM TOKEN
@@ -412,55 +411,55 @@ export const editProduct = async (req, res) => {
         }
       };
 
-     export const addExistingProduct = async (req, res) => {
-  try {
-    const { quantity, barcode, qrcode } = req.body;
+      export const addExistingProduct = async (req, res) => {
+      try {
+      const { quantity, barcode, qrcode } = req.body;
 
-    // =========================
-    // VALIDATION
-    // =========================
-    if (!quantity || (!barcode && !qrcode)) {
+      // =========================
+      // VALIDATION
+      // =========================
+      if (!quantity || (!barcode && !qrcode)) {
       return res.status(400).json({
         success: false,
         error: "Please fill all required fields",
       });
-    }
+      }
 
-    // =========================
-    // FIND PRODUCT
-    // =========================
-    let product = null;
+      // =========================
+      // FIND PRODUCT
+      // =========================
+      let product = null;
 
-    // SEARCH BY BARCODE
-    if (barcode) {
+      // SEARCH BY BARCODE
+      if (barcode) {
       product = await prisma.product.findUnique({
         where: {
           barcode,
         },
       });
-    }
+      }
 
-    // SEARCH BY QRCODE
-    if (!product && qrcode) {
+      // SEARCH BY QRCODE
+      if (!product && qrcode) {
       product = await prisma.product.findUnique({
         where: {
           qrcode,
         },
       });
-    }
+      }
 
-    // PRODUCT NOT FOUND
-    if (!product) {
+      // PRODUCT NOT FOUND
+      if (!product) {
       return res.status(404).json({
         success: false,
         error: "Product not found",
       });
-    }
+      }
 
-    // =========================
-    // UPDATE PRODUCT
-    // =========================
-    const updatedProduct = await prisma.product.update({
+      // =========================
+      // UPDATE PRODUCT
+      // =========================
+      const updatedProduct = await prisma.product.update({
       where: {
         product_id: product.product_id,
       },
@@ -469,23 +468,90 @@ export const editProduct = async (req, res) => {
           increment: parseInt(quantity),
         },
       },
-    });
+      });
 
-    // =========================
-    // SUCCESS
-    // =========================
-    return res.status(200).json({
+      // =========================
+      // SUCCESS
+      // =========================
+      return res.status(200).json({
       success: true,
       message: "Product updated successfully",
       product: updatedProduct,
+      });
+
+      } catch (error) {
+      console.error("Update Product Error:", error);
+
+      return res.status(500).json({
+      success: false,
+      error: "Failed to update product",
+      });
+      }
+      };
+
+      export const lowStockProducts = async (req, res) => {
+  try {
+    // GET USER ID FROM TOKEN
+    const user = await getUserFromRefreshToken(
+      req.cookies.refreshTokeN
+    );
+
+    if (!user) {
+      console.log("Unauthorized access attempt to low stock products");
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized",
+      });
+    }
+
+    // FIND SHOP
+    const shop = await prisma.shop.findFirst({
+      where: {
+        owner_id: user.user_id,
+      },
+    });
+
+    if (!shop) {
+      return res.status(404).json({
+        success: false,
+        error: "Shop not found",
+      });
+    }
+
+    // FIND BRANCH
+    const branch = await prisma.branch.findFirst({
+      where: {
+        shop_id: shop.shop_id,
+      },
+    });
+
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        error: "Branch not found",
+      });
+    }
+
+    // LOW STOCK PRODUCTS
+    const lowStockProducts = await prisma.$queryRaw`
+      SELECT *
+      FROM "Products"
+      WHERE branch_id = ${branch.branch_id}
+      AND quantity <= "minStock"
+      AND "isActive" = true
+    `;
+
+    return res.status(200).json({
+      success: true,
+      products: lowStockProducts,
     });
 
   } catch (error) {
-    console.error("Update Product Error:", error);
+    console.error("Low Stock Products Error:", error);
 
     return res.status(500).json({
       success: false,
-      error: "Failed to update product",
+      error: "Failed to fetch low stock products",
     });
   }
-};
+      };

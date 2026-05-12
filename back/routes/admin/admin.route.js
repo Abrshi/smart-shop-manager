@@ -5,6 +5,7 @@ import {
   editProduct,
   getEmployeeBranches,
   getProducts,
+  lowStockProducts,
 } from "../../controller/admin/admin.controller.js";
 import multer from "multer";
 
@@ -21,4 +22,5 @@ router.post("/editProduct/:id", upload.single("image"), editProduct);
 router.get("/getEmployeeBranches", getEmployeeBranches);
 router.get("/getProducts", getProducts);
 router.post("/addExistingProduct", addExistingProduct);
+router.get("/LowStockProducts", lowStockProducts);
 export default router;
