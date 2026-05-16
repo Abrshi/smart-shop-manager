@@ -76,11 +76,14 @@ const LowStock = () => {
                   </h2>
 
                   <p className="text-sm text-gray-500">
-                    SKU: {product.sku || "N/A"}
+                    Name: {product.name || "N/A"}
                   </p>
 
                   <p className="text-sm text-gray-500">
                     Brand: {product.brand || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-500">   
+                     Type: {product.type || "N/A"}
                   </p>
                 </div>
 

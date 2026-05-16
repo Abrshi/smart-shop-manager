@@ -8,6 +8,7 @@ import authRouter from "./routes/auth/auth.route.js";
 import payment from "./routes/payment/payment.route.js";
 import ownerRouter from "./routes/owner/owner.route.js";
 import adminRouter from "./routes/admin/admin.route.js";
+import cashierRouter from "./routes/cashier/cashier.route.js"
 
 // admin routes
 
@@ -41,6 +42,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/payment", payment);
 app.use("/api/v1/owner", ownerRouter);
 app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/cashier", cashierRouter);
 app.get("/", (req, res) => {
   res.send({ message: "Shop API is running..." });
 });

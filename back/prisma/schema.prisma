@@ -39,6 +39,7 @@ model User {
   employees      Employee[]
   payments      Payment[]
   sessions      Session[]
+  sales         Sale[]
   @@map("Users")
 }
 
@@ -134,6 +135,38 @@ model Product {
   
   employee Employee @relation(fields: [employee_id], references: [employee_id])
   branch Branch @relation(fields: [branch_id], references: [branch_id])
+  sales SaleItem[]  
 
   @@map("Products")
+}
+model Sale {
+  sale_id      Int        @id @default(autoincrement())
+
+  user_id      Int
+  total        Float
+
+  created_at   DateTime   @default(now())
+
+  user         User       @relation(fields: [user_id], references: [user_id])
+
+  items        SaleItem[]
+
+  @@map("Sales")
+}
+
+model SaleItem {
+  sale_item_id Int       @id @default(autoincrement())
+
+  sale_id      Int
+  product_id   Int
+
+  quantity     Int
+  price        Float
+
+  created_at   DateTime  @default(now())
+
+  sale          Sale     @relation(fields: [sale_id], references: [sale_id])
+  product       Product  @relation(fields: [product_id], references: [product_id])
+
+  @@map("SaleItems")
 }

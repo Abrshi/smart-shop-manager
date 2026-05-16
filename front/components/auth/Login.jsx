@@ -49,6 +49,8 @@ export default function LoginPage() {
           router.push("/owner");
         }else if (res.data.user.role === "ONBORED") {
           router.push("/onbored");
+        }else if (res.data.user.role === "CASHIER") {
+          router.push("/cashier");
         }else {
           router.push("/"); 
         }
