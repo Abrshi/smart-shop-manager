@@ -30,8 +30,6 @@ function ProductManager() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      
-      {/* CONTAINER */}
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         
         {/* HEADER */}
@@ -48,10 +46,8 @@ function ProductManager() {
         {/* MAIN LAYOUT */}
         <div className="flex flex-col lg:flex-row gap-6">
           
-          {/* SIDEBAR / TABS */}
-          <div className="lg:w-[260px] w-full">
-            
-            {/* MOBILE SCROLL */}
+          {/* SIDEBAR */}
+          <div className="lg:w-[260px] w-full lg:sticky lg:top-6 self-start">
             <div className="flex lg:flex-col gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {tabs.map((tab) => (
                 <button
@@ -81,23 +77,12 @@ function ProductManager() {
 
           {/* CONTENT */}
           <div className="flex-1">
-            <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 md:p-6 lg:p-8 shadow-2xl min-h-[600px]">
+            <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 md:p-6 lg:p-8 shadow-2xl h-[80vh] overflow-y-auto">
               
-              {activeTab === "get-products" && (
-                <GetProducts />
-              )}
-
-              {activeTab === "add-new" && (
-                <AddProduct />
-              )}
-
-              {activeTab === "add-existing" && (
-                <AddExisting />
-              )}
-
-              {activeTab === "low-stock" && (
-                <LowStock />
-              )}
+              {activeTab === "get-products" && <GetProducts />}
+              {activeTab === "add-new" && <AddProduct />}
+              {activeTab === "add-existing" && <AddExisting />}
+              {activeTab === "low-stock" && <LowStock />}
 
             </div>
           </div>

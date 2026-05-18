@@ -79,6 +79,8 @@ model Shop{
   user User @relation(fields: [owner_id], references: [user_id])
   employees Employee[]
   branches Branch[]
+  sales Sale[]
+
   
   @@map("Shops")
 }
@@ -94,6 +96,7 @@ model Branch{
   shop Shop @relation(fields: [shop_id], references: [shop_id])
   employees Employee[]
   products Product[]
+  sales Sale[]
   @@map("Branches")
 }
 
@@ -146,8 +149,12 @@ model Sale {
   total        Float
 
   created_at   DateTime   @default(now())
+    branch_id  Int
+  shop_id    Int
 
   user         User       @relation(fields: [user_id], references: [user_id])
+  branch       Branch     @relation(fields: [branch_id], references: [branch_id])
+  shop         Shop       @relation(fields: [shop_id], references: [shop_id])
 
   items        SaleItem[]
 

@@ -11,10 +11,7 @@ export default function CashierLayout({ children }) {
 
   const navItems = [
     { name: "Scanner", path: "/cashier" },
-    { name: "Caret", path: "/cashier/caret" },
-    { name: "Receipts", path: "/cashier/receipts" },
-    { name: "Products", path: "/cashier/products" },
-    { name: "Story", path: "/cashier/story" },
+    { name: "Recent", path: "/cashier/recent" },
     
   ];
 
@@ -57,10 +54,7 @@ export default function CashierLayout({ children }) {
             Settings
           </Link>
 
-          <Link href="/admin/billing" className="text-slate-400 hover:text-white text-sm">
-            Billing
-          </Link>
- 
+          
 
           {/* User */}
           <div className="flex items-center gap-3 ml-2">

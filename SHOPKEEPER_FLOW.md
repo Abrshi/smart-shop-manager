@@ -45,7 +45,7 @@ This is a **Point of Sale (POS)** interface focused on speed and simplicity.
 
 ---
 
-### 🧾 2. Cart Management
+### 🧾 2. Car1`t Management
 
 #### Features:
 - List of scanned products

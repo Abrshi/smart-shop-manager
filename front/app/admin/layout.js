@@ -12,16 +12,10 @@ export default function OwnerLayout({ children }) {
   const navItems = [
     { name: "Dashboard", path: "/admin" },
     { name: "Products", path: "/admin/products" },
-    { name: "Inventory", path: "/admin/inventory" },
-    { name: "Monitoring", path: "/admin/monitoring" },
-    { name: "Employees", path: "/admin/employees" },
     
   ];
 
-  const handleRoleSwitch = (role) => {
-    if (role === "admin") router.push("/admin");
-    if (role === "shopkeeper") router.push("/shopkeeper");
-  };
+
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -59,19 +53,6 @@ export default function OwnerLayout({ children }) {
           <Link href="/admin/settings" className="text-slate-400 hover:text-white text-sm">
             Settings
           </Link>
-
-          <Link href="/admin/billing" className="text-slate-400 hover:text-white text-sm">
-            Billing
-          </Link>
-
-          {/* Role Switch */}
-          <select
-            onChange={(e) => handleRoleSwitch(e.target.value)}
-            className="bg-slate-800 text-sm px-3 py-1.5 rounded-md border border-slate-700 focus:outline-none"
-          >
-            <option value="admin">Admin Panel</option>
-            <option value="shopkeeper">Shopkeeper Panel</option>
-          </select>
 
           {/* User */}
           <div className="flex items-center gap-3 ml-2">

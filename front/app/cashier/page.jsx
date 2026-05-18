@@ -29,6 +29,7 @@ function page() {
       {/* Show Checkout ONLY when clicked */}
       {showCheckout && (
         <Checkout
+          setProducts={setProducts}
           products={products}
           setShowCheckout={
             setShowCheckout

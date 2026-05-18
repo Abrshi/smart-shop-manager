@@ -185,3 +185,109 @@ import bcrypt from "bcrypt";
                   res.status(500).json({ error: "Failed to fetch employees" });
                 }
               };
+      export const getOwnerShopsBranchesProducts = async (
+              req,
+              res
+            ) => {
+              try {
+                // Get logged-in user
+                const user =
+                  await getUserFromRefreshToken(
+                    req.cookies.refreshToken
+                  );
+
+                  console.log("User from token:", user);
+
+                if (!user) {
+                  return res.status(401).json({
+                    success: false,
+                    message: "Unauthorized",
+                  });
+                }
+
+                // Find all shops owned by this user
+                const shops = await prisma.shop.findMany({
+                  where: {
+                    owner_id: user.user_id,
+                  },
+
+                  include: {
+                    branches: {
+                      include: {
+                        products: {
+                          where: {
+                            isActive: true, // optional
+                          },
+
+                          orderBy: {
+                            created_at: "desc",
+                          },
+                        },
+                      },
+
+                      orderBy: {
+                        created_at: "desc",
+                      },
+                    },
+                  },
+
+                  orderBy: {
+                    created_at: "desc",
+                  },
+                });
+
+                return res.status(200).json({
+                  success: true,
+                  count: shops.length,
+                  data: shops,
+                });
+              } catch (error) {
+                console.error(
+                  "Error fetching shops:",
+                  error
+                );
+
+                return res.status(500).json({
+                  success: false,
+                  message:
+                    "Failed to fetch shops data",
+                  error: error.message,
+                });
+              }
+            };
+
+      export const getOwnerSalesData = async (req, res) => {
+        try {
+          const user = await getUserFromRefreshToken(req.cookies.refreshToken); 
+          if (!user) {
+            return res.status(401).json({ error: "Unauthorized" });
+          }
+          const salesData = await prisma.sale.findMany({
+            where: {
+              branch: {
+                shop: {
+                  owner_id: user.user_id,
+                },  
+              },
+            },
+            include: {
+              branch: true,
+              user: {
+                select: {
+                  first_name: true,
+                  father_name: true,
+                      },
+                    },
+              items: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          });
+          res.json(salesData);
+        } catch (error) {
+          console.error("Error fetching sales data:", error);
+          res.status(500).json({ error: "Failed to fetch sales data" });
+        }
+      };

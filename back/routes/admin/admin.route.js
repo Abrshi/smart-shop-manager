@@ -2,6 +2,7 @@ import express from "express";
 import {
     addExistingProduct,
   addNewProduct,
+  analyticsForSoledItems,
   editProduct,
   getEmployeeBranches,
   getProducts,
@@ -23,4 +24,5 @@ router.get("/getEmployeeBranches", getEmployeeBranches);
 router.get("/getProducts", getProducts);
 router.post("/addExistingProduct", addExistingProduct);
 router.get("/LowStockProducts", lowStockProducts);
+router.get("/analyticsForSoldItems", analyticsForSoledItems);
 export default router;

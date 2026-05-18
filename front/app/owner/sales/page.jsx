@@ -1,10 +1,10 @@
-import OwnerDashboard from '@/components/onbored/OwnerDashboard'
+import OwnerSalesPage from '@/components/Owner/OwnerSalesPage'
 import React from 'react'
 
 function page() {
   return (
     <div>
-      <OwnerDashboard />
+        <OwnerSalesPage />
     </div>
   )
 }

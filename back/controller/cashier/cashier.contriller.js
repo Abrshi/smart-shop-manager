@@ -235,7 +235,12 @@ export const verifyCheckout = async (
       await getUserFromRefreshToken(
         req.cookies.refreshToken
       );
-  console.log("User from token:", user);
+
+    console.log(
+      "User from token:",
+      user
+    );
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -258,7 +263,7 @@ export const verifyCheckout = async (
       });
     }
 
-    // GET EMPLOYEE (CASHIER)
+    // GET EMPLOYEE
     const employee =
       await prisma.employee.findFirst(
         {
@@ -295,7 +300,7 @@ export const verifyCheckout = async (
       (p) => p.code
     );
 
-    // GET PRODUCTS FROM EMPLOYEE BRANCH
+    // GET PRODUCTS
     const dbProducts =
       await prisma.product.findMany({
         where: {
@@ -317,7 +322,7 @@ export const verifyCheckout = async (
         },
       });
 
-    // CREATE PRODUCT MAP
+    // PRODUCT MAP
     const productMap =
       new Map();
 
@@ -338,6 +343,7 @@ export const verifyCheckout = async (
     }
 
     let total = 0;
+
     const saleItems = [];
 
     // VERIFY PRODUCTS
@@ -368,7 +374,7 @@ export const verifyCheckout = async (
         });
       }
 
-      // TOTAL
+      // CALCULATE TOTAL
       total +=
         product.price *
         quantity;
@@ -382,95 +388,203 @@ export const verifyCheckout = async (
       });
     }
 
+    console.log(
+      "Branch ID:",
+      employee.branch_id
+    );
+
     // TRANSACTION
     const sale =
       await prisma.$transaction(
         async (tx) => {
+          // GET BRANCH
+          const branch =
+            await tx.branch.findUnique(
+              {
+                where: {
+                  branch_id:
+                    employee.branch_id,
+                },
+              }
+            );
+
+          if (!branch) {
+            throw new Error(
+              "Branch not found"
+            );
+          }
+
           // CREATE SALE
           const createdSale =
             await tx.sale.create({
               data: {
                 user_id:
                   user.user_id,
+
                 total,
+
+                branch_id:
+                  employee.branch_id,
+
+                shop_id:
+                  branch.shop_id,
               },
             });
 
-          // SAFE STOCK UPDATE
+          // CREATE SALE ITEMS
           for (const item of saleItems) {
-            const updated =
-              await tx.product.updateMany(
-                {
-                  where: {
-                    product_id:
-                      item.product_id,
-                    quantity: {
-                      gte:
-                        item.quantity,
-                    },
-                  },
-                  data: {
-                    quantity: {
-                      decrement:
-                        item.quantity,
-                    },
-                  },
-                }
-              );
+            await tx.saleItem.create({
+              data: {
+                sale_id:
+                  createdSale.sale_id,
 
-            // PREVENT OVERSELLING
-            if (
-              updated.count ===
-              0
-            ) {
-              throw new Error(
-                "Insufficient stock"
-              );
-            }
+                product_id:
+                  item.product_id,
+
+                quantity:
+                  item.quantity,
+
+                price:
+                  item.price,
+              },
+            });
           }
 
-          // CREATE SALE ITEMS
-          await tx.saleItem.createMany(
-            {
-              data:
-                saleItems.map(
-                  (item) => ({
-                    sale_id:
-                      createdSale.sale_id,
-                    product_id:
-                      item.product_id,
-                    quantity:
-                      item.quantity,
-                    price:
-                      item.price,
-                  })
-                ),
-            }
-          );
+          // UPDATE STOCK
+          for (const item of products) {
+            const product =
+              productMap.get(
+                item.code
+              );
+
+            await tx.product.update({
+              where: {
+                product_id:
+                  product.product_id,
+              },
+
+              data: {
+                quantity: {
+                  decrement:
+                    item.quantity,
+                },
+              },
+            });
+          }
 
           return createdSale;
         }
       );
 
+    console.log(
+      "Created sale:",
+      sale
+    );
+
     return res.status(200).json({
       success: true,
+
       total,
+
       sale_id:
         sale.sale_id,
+
       message:
         "Checkout successful",
     });
   } catch (error) {
     console.log(
-      "VERIFY CHECKOUT ERROR:",
-      error
+      "Error details:",
+      {
+        message:
+          error.message,
+
+        stack:
+          error.stack,
+      }
     );
 
     return res.status(500).json({
       success: false,
+
       error:
         error.message ||
         "Internal server error",
     });
   }
 };
+export const recent = async (req, res) => {
+  try {
+    const user = await getUserFromRefreshToken(
+      req.cookies.refreshToken
+    );
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized",
+      });
+    }
+
+    const employee = await prisma.employee.findFirst({
+      where: {
+        user_id: user.user_id,
+      },
+    });
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        error: "Employee not found",
+      });
+    }
+    const sales = await prisma.sale.findMany({
+      where: {
+        user_id: user.user_id,
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+      take: 10,
+    });
+    return res.status(200).json({
+      success: true,
+      data: sales,
+    });
+  } catch (error) {
+    console.log("RECENT SALES ERROR:", error);
+    return res.status(500).json({ 
+      success: false,
+      error: "Internal server error" 
+    });
+  }
+};
+
+export const getSaleItems =
+  async (req, res) => {
+    try {
+      const saleId = Number(
+        req.params.saleId
+      );
+
+      const items =
+        await prisma.saleItem.findMany({
+          where: {
+            sale_id: saleId,
+          },
+
+          include: {
+            product: true,
+          },
+        });
+
+      return res.json({
+        success: true,
+        data: items,
+      });
+    } catch (error) {
+      console.log(error);
+
+      return res.status(500).json({
+        success: false,
+      });
+    }
+  };

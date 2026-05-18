@@ -11,19 +11,12 @@ export default function OwnerLayout({ children }) {
 
   const navItems = [
     { name: "Dashboard", path: "/owner" },
-    { name: "Products", path: "/owner/products" },
     { name: "Sales", path: "/owner/sales" },
-    { name: "Inventory", path: "/owner/inventory" },
     { name: "Employees", path: "/owner/employees" },
     { name: "Customers", path: "/owner/customers" },
     { name: "Reports", path: "/owner/reports" },
     { name: "Shop", path: "/owner/shop" },
   ];
-
-  const handleRoleSwitch = (role) => {
-    if (role === "admin") router.push("/admin");
-    if (role === "shopkeeper") router.push("/shopkeeper");
-  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">

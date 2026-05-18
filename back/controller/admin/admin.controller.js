@@ -172,8 +172,13 @@ import { prisma } from "../../lib/prisma.js";
           // UPLOAD IMAGE
           // =========================
 
-          const imageUrl = await uploadFileToDrive(image);
+          const driveResult = await uploadFileToDrive(image);
 
+            // if Google returns file id directly
+            const driveId = driveResult.id;
+
+            const imageUrl = `${process.env.BACKEND_URL}/api/v1/google-image/${driveId}`;
+            
           if (!imageUrl) {
             console.error("Image upload failed");
 
@@ -228,6 +233,7 @@ import { prisma } from "../../lib/prisma.js";
           });
         }
       };
+
       export const editProduct = async (req, res) => {
         try {
           const {
@@ -316,8 +322,16 @@ import { prisma } from "../../lib/prisma.js";
           // UPLOAD IMAGE
           // =========================
 
-          const imageUrl = await uploadFileToDrive(image);
+          const googleUrl = await uploadFileToDrive(image);
 
+// Extract ID from Google URL
+const match = googleUrl.match(/id=([a-zA-Z0-9_-]+)/);
+const driveId = match ? match[1] : null;
+
+// Build your API URL
+const imageUrl = driveId
+  ? `${process.env.BACKEND_URL}/api/v1/google-image/${driveId}`
+  : null;
           if (!imageUrl) {
             console.error("Image upload failed");
 
@@ -554,4 +568,102 @@ import { prisma } from "../../lib/prisma.js";
       error: "Failed to fetch low stock products",
     });
   }
+      };
+
+      export const analyticsForSoledItems = async (req, res) => {
+        try {
+          const user = await getUserFromRefreshToken(req.cookies.refreshToken);
+
+          if (!user) {
+            return res.status(401).json({ success: false, error: "Unauthorized" });
+          }
+
+          const employee = await prisma.employee.findFirst({
+            where: { user_id: user.user_id },
+          });
+
+          if (!employee) {
+            return res.status(404).json({ success: false, error: "Employee not found" });
+          }
+
+          const sales = await prisma.sale.findMany({
+            where: {
+              user: {
+                employees: {
+                  some: {
+                    branch_id: employee.branch_id,
+                  },
+                },
+              },
+            },
+            include: {
+              items: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          });
+
+          const allItems = sales.flatMap((sale) =>
+            sale.items.map((item) => ({
+              ...item,
+              sale_created_at: sale.created_at,
+              sale_id: sale.sale_id,
+            }))
+          );
+
+          const analyticsMap = new Map();
+
+          for (const item of allItems) {
+            const product = item.product;
+
+            if (!analyticsMap.has(item.product_id)) {
+              analyticsMap.set(item.product_id, {
+                productId: item.product_id,
+                productName: product?.name || "Unknown",
+
+                // 📊 core metrics
+                quantitySold: 0,
+                totalRevenue: 0,
+                salesCount: 0,
+
+                // 📦 product info
+                currentStock: product?.quantity || 0,
+                price: product?.price || 0,
+
+                // 🕒 tracking
+                lastSold: null,
+              });
+            }
+
+            const data = analyticsMap.get(item.product_id);
+
+            data.quantitySold += item.quantity;
+            data.totalRevenue += item.quantity * item.price;
+            data.salesCount += 1;
+
+            // last sold tracking
+            if (!data.lastSold || item.sale_created_at > data.lastSold) {
+              data.lastSold = item.sale_created_at;
+            }
+          }
+
+          const result = Array.from(analyticsMap.values()).map((p) => ({
+            ...p,
+            avgSellingPrice:
+              p.salesCount > 0 ? p.totalRevenue / p.quantitySold : 0,
+          }));
+
+          return res.status(200).json({
+            success: true,
+            analytics: result,
+          });
+        } catch (error) {
+          console.error(error);
+          return res.status(500).json({
+            success: false,
+            error: "Failed to fetch analytics",
+          });
+        }
       };
