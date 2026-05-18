@@ -5,6 +5,8 @@ import { axiosbaseurl } from "../../axios/axios";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 
+//lll`
+
 function VerifyPaymentContent() {
   const [status, setStatus] = useState("Verifying payment...");
   const [tryAgain, setTryAgain] = useState(false);
