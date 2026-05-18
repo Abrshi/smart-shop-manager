@@ -4,14 +4,20 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const KEY_FILE_PATH = process.cwd() + "/final-project-455209-3941f974a570.json";
+// Read JSON from Render env
+const credentials = JSON.parse(
+  process.env.GOOGLE_CREDENTIALS
+);
 
 const auth = new google.auth.GoogleAuth({
-  keyFile: KEY_FILE_PATH,
+  credentials,
   scopes: ["https://www.googleapis.com/auth/drive"],
 });
 
-const drive = google.drive({ version: "v3", auth });
+const drive = google.drive({
+  version: "v3",
+  auth,
+});
 
 export const uploadFileToDrive = async (file) => {
   try {
@@ -19,7 +25,7 @@ export const uploadFileToDrive = async (file) => {
       throw new Error("File buffer missing");
     }
 
-    // convert buffer → stream (THIS is the key fix)
+    // Buffer → stream
     const bufferStream = new stream.PassThrough();
     bufferStream.end(file.buffer);
 
@@ -36,7 +42,7 @@ export const uploadFileToDrive = async (file) => {
 
     const fileId = response.data.id;
 
-    // make public
+    // Make file public
     await drive.permissions.create({
       fileId,
       requestBody: {
@@ -45,7 +51,8 @@ export const uploadFileToDrive = async (file) => {
       },
     });
 
-    return `https://drive.google.com/uc?id=${fileId}`;
+    // Return your backend image URL
+    return `${process.env.BACKEND_URL}/api/v1/google-image/${fileId}`;
 
   } catch (err) {
     console.error("Error uploading file:", err);
