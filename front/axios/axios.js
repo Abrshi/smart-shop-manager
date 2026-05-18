@@ -2,11 +2,9 @@
 import axios from "axios";
 
 export const axiosbaseurl = axios.create({
-  
-//   baseURL:'https://bikeback.onrender.com/api/v1',
-  baseURL:'http://localhost:5500/api/v1',
-  withCredentials: true, // 
-});
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true,
+});;
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -19,7 +17,8 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Hold access token only in memory
+
+// Hold access token only in memoryTEST
 let accessToken = null;
 
 // Attach token to requests
