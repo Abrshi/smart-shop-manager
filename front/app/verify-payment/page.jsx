@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { axiosbaseurl } from "../../axios/axios";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useAuth } from "../../context/AuthContext"; // 👈 ADD THIS
+import { useAuth } from "../../context/AuthContext";
 
-export default function VerifyPaymentPage() {
+function VerifyPaymentContent() {
   const [status, setStatus] = useState("Verifying payment...");
   const [tryAgain, setTryAgain] = useState(false);
 
@@ -13,9 +13,15 @@ export default function VerifyPaymentPage() {
   const tx = searchParams.get("tx");
 
   const router = useRouter();
-  const { login } = useAuth(); // 👈 GET LOGIN FUNCTION
+  const { login } = useAuth();
 
   useEffect(() => {
+    if (!tx) {
+      setStatus("Invalid payment request ❌");
+      setTryAgain(true);
+      return;
+    }
+
     const verifyPayment = async () => {
       try {
         const res = await axiosbaseurl.get("/payment/verify", {
@@ -27,31 +33,32 @@ export default function VerifyPaymentPage() {
 
         setStatus(res.data.message || "Payment verified ✅");
 
-        // ❗ CASE: no pending payment
+        // No pending payment
         if (res.data.message === "No pending payment found") {
           setTryAgain(true);
           return;
         }
 
-        // 🔥 IMPORTANT: update frontend user immediately
+        // Update auth state
         if (res.data.user) {
-          login(res.data.user); // ✅ THIS FIXES YOUR PROBLEM
+          login(res.data.user);
         }
 
-        // redirect after short delay
+        // Redirect
         setTimeout(() => {
           router.push("/owner");
         }, 1500);
 
       } catch (err) {
         console.log(err);
+
         setStatus("Payment verification failed ❌");
         setTryAgain(true);
       }
     };
 
     verifyPayment();
-  }, [tx]);
+  }, [tx, login, router]);
 
   return (
     <div className="h-screen flex flex-col items-center justify-center text-xl font-semibold gap-4">
@@ -66,5 +73,13 @@ export default function VerifyPaymentPage() {
         </button>
       )}
     </div>
+  );
+}
+
+export default function VerifyPaymentPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyPaymentContent />
+    </Suspense>
   );
 }
